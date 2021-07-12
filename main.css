@@ -1,0 +1,57 @@
+@charset "UTF-8";
+
+/*
+#header {
+  display: flex;
+  width: 1200px;
+  height: 60px;
+  background-color: white;
+}
+
+#main {
+  display: flex;
+  width: 1200px;
+  margin: 0 auto;
+  justify-content: space-between;
+  align-items: center;
+  background-color: white;
+}
+*/
+#headerBar {
+  background-color: #b3b3b3;
+}
+
+#brand {
+    color: black;
+}
+
+.memo-item {
+    background-color: white;
+}
+
+.memo-item-date {
+  font-size: 0.8rem;
+  color: #787878;
+}
+
+.currentMemoCell {
+    background-color: #ccc;
+}
+
+.add-button {
+  text-decoration: none;
+  color: #28a745;
+  font-size: 18px;
+}
+.add-button:hover {
+  text-decoration: none;
+  color: #1f8737;
+}
+.add-button:focus {
+  text-decoration: none;
+}
+
+.fa-trash-alt {
+  text-decoration: none;
+  color: red;
+}

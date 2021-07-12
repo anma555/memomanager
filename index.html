@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>Memo Manager | シンプル！メモアプリ</title>
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  
+  <!-- 自サイトのCSS -->
+  <link rel="stylesheet" href="main.css">
+  <!-- Vue.js -->
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  
+  
+</head>
+
+<body>
+  <div id="app">
+    
+    <!-- ログイン画面 -->
+    <section id="login" class="view py-4" v-show="currentView === 'login'">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-sm-10 col-md-8 col-lg-6">
+            <form id="login-form">
+              <div class="form-group login__email">
+                <label for="login-email" class="col-form-label">
+                  メールアドレス
+                </label>
+                <div>
+                  <input v-model="email" id="login-email" type="email" class="form-control" required>
+                </div>
+              </div>
+              <div class="form-group login__password">
+                <label for="login-password" class="col-form-label">
+                  パスワード
+                </label>
+                <div>
+                  <input v-model="password" id="login-password" type="password" class="form-control" required>
+                  <p class="form-text text-muted">
+                    初めての方は、登録するパスワードを入力してください
+                  </p>
+                </div>
+              </div>
+              <transition>
+                <div id="login__help" class="alert alert-danger" v-show="loginAlert">{{ loginHelpText }}</div>
+              </transition>
+              <div class="form-group login__submit">
+                <div>
+                  <button v-bind:disabled="isPush" v-on:click="loginSubmit" id="login__submit-button" type="submit" class="btn btn-success">
+                    {{ loginButtonText }}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- /#login -->
+  
+  <!-- ヘッダー -->
+  <section id="header" class="py-3" v-show="currentView === 'main'">
+    
+    <div class="container">
+      <div class="row" id="headerBar">
+        <div class="col-6">
+          <a id="brand" class="navbar-brand col-6" href="./index.html">Memo Manager</a>
+        </div>
+        <div class="col-6 text-right">
+          <button v-on:click="logoutClick" id="logoutBtn" class="btn btn-primary btn-sm mt-1">ログアウト</button>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- メイン -->
+  <section id="main" class="container py-3" v-show="currentView === 'main'">
+    <div class="row mt-1">
+      <!-- コレクションビュー -->
+      <section id="collectionView" class="col-md-3 border" v-show="collectionViewDisplay">
+        <div id="CollectionHeader" class="border-bottom mt-2 mb-2">
+          <div class="text-right mb-2">
+            <a v-on:click.preventDefault()="newMemo" class="add-button mr-1 mb-2">
+             <i class="fas fa-plus fa-lg"></i>
+            </a>
+          </div>
+        </div>
+        <div v-for="memo in reverseMemos" v-bind:key="memo.id">
+          <div class="memo-item rounded shadow-sm border" v-bind:id="memo.id" v-on:click="selectedMemo" v-bind:class="[ memo.id === currentMemoId ? 'currentMemoCell' : '' ]">
+            <div class="memo-item-title font-weight-bold ml-4 mt-4 text-truncate">{{ memo.title }}</div>
+            <div class="memo-item-Detailes font-weight-light ml-5 mr-5 mb-2 text-truncate">{{ memo.details }}</div>
+            <div class="memo-item-date font-weight-light text-right mr-5 mb-2">{{ formatDate(new Date(memo.updatedAt)) }}</div>
+          </div>
+        </div>
+      </section>
+        
+      <!-- シングルビュー --> 
+      <section id="singleView" class="col-md-9" v-bind:display="singleViewDisplay" v-show="singleViewDisplay">
+        <div class="memo-item rounded shadow-sm border" v-bind:id="currentMemoId">
+          <div id="CollectionHeader" class="row border-bottom mt-2 mb-2">
+            <div class="mb-2 col">
+              <a v-on:click.preventDefault()="returnToCollectionView" class="mb-2 ml-3" v-show="isMobileDevice">
+                <i class="fas fa-chevron-left"></i>
+              </a>
+            </div>
+            <div class="text-right mb-2 col">
+              <a v-on:click.preventDefault()="editMemoSubmit" class="add-button mb-2 mr-3" v-show="singleViewMode === 'View'">
+                <i class="far fa-edit fa-lg"></i>
+              </a>
+              <a v-on:click.preventDefault()="addMemoSubmit" class="add-button mb-2 mr-3" v-show="singleViewMode === 'New'">
+                <i class="far fa-save fa-lg"></i>
+              </a>
+              <a v-on:click.preventDefault()="updateMemoSubmit" class="add-button mb-2 mr-3" v-show="singleViewMode === 'Edit'">
+                <i class="far fa-save fa-lg"></i>
+              </a>
+              <a v-on:click.preventDefault()="deleteMemoSubmit" class="delete-button mb-2 mr-3" v-show="singleViewMode === 'View'">
+                <i class="far fa-trash-alt fa-lg"></i>
+              </a>
+            </div>
+          </div>
+          <div class="m-3">
+            <transition>
+              <div id="memo__help" class="alert alert-danger" v-show="memoAlert">{{ memoHelpText }}</div>
+            </transition>
+            <form autocomplete="off">
+              <div class="form-group row">
+                <label for="edit_title" class="col-md-3 col-form-label">タイトル</label>
+                <div class="col-md-9">
+                  <input id="view_title" v-model="currentMemoTitle" type="text" class="form-control-plaintext fm-title" readonly v-show="singleViewMode === 'View'">
+                  <input id="edit_title" ref="editMemoTitle" v-model="editMemoTitle" type="text" class="form-control fm-title" required v-show="singleViewMode === 'Edit'">
+                  <input id="add-memo-title" ref="addMemoTitle" v-model="addMemoTitle" type="text" class="form-control fm-title" required v-show="singleViewMode === 'New'">
+                </div>
+              </div>
+              <div class="form-group row">
+                <label for="edit_details" class="col-md-3 col-form-label">詳細</label>
+                <div class="col-md-9">
+                  <textarea v-model="currentMemoDetails" id="view-details" class="form-control-plaintext fm-details" rows="15" readonly v-show="singleViewMode === 'View'"></textarea>
+                  <textarea v-model="editMemoDetails" id="edit-details" class="form-control fm-details" rows="15" v-show="singleViewMode === 'Edit'"></textarea>
+                  <textarea v-model="addMemoDetails" id="add-memo-details" class="form-control fm-details" rows="15" v-show="singleViewMode === 'New'"></textarea>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+        
+        
+      </section>
+    </div>
+  </section>
+  
+  <!-- フッター -->
+  <section id="footer" class="container py-3">
+    <div class="text-center">
+      <small>&copy; 2021 Shigeru Yamabayashi</small>
+    </div>
+  </section>
+  
+  </div>
+  <!-- Firebaseのセットアップコード（下記のSDKのバージョンは6.2.0） -->
+  <!-- The core Firebase JS SDK is always required and must be listed first 
+    (中心となるFirebase SDKです。常に必要で、最初に記述する必要があります) -->
+  <script src="https://www.gstatic.com/firebasejs/6.2.0/firebase-app.js"></script>
+  <!-- TODO: Add SDKs for Firebase products that you want to use
+         https://firebase.google.com/docs/web/setup#config-web-app
+        (使いたいFirebaseサービス用のSDKを加えます) -->
+  <script src="https://www.gstatic.com/firebasejs/6.2.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/6.2.0/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/6.2.0/firebase-storage.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/6.2.0/firebase-firestore.js"></script>
+  
+  <!-- apiKeyなどは、ご自身の環境のものに合わせてください -->
+  <script>
+// Your web app's Firebase configuration
+var firebaseConfig = {
+  apiKey: "AIzaSyD4MeefTw78i1QzidRsDjYqn-izHR1jiMU",
+  authDomain: "memo-manager-4713d.firebaseapp.com",
+  databaseURL: "https://memo-manager-4713d-default-rtdb.firebaseio.com",
+  projectId: "memo-manager-4713d",
+  storageBucket: "memo-manager-4713d.appspot.com",
+  messagingSenderId: "920403359657",
+  appId: "1:920403359657:web:ee94da706d9c45ecb1f6b8"
+};
+  // Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+</script>
+  
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+  <!-- Popper.js, 次に Bootstrap JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+  
+  <!-- 外部ライブラリ -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.2/moment.min.js"></script>
+  
+  <!-- Font Awesome -->
+  <script src="https://kit.fontawesome.com/69f8c33a9a.js" crossorigin="anonymous"></script>
+  
+  <script src="main.js"></script>
+  
+</body>
+
+</html>
